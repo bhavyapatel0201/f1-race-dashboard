@@ -53,7 +53,7 @@ def pole_baseline(df: pd.DataFrame) -> pd.DataFrame:
     return (poles.groupby("Year")["Won"].agg(PoleWins="sum", Races="count")
                  .assign(PoleWinRate=lambda d: (d["PoleWins"] / d["Races"]).round(3))
                  .reset_index())
-
+feat/results-dataset
 
 # ---------------------------------------------------------------------------
 # Step 3: relative-strength features (Elo ratings, championship points, field-relative form)
@@ -143,3 +143,4 @@ def add_relative(df: pd.DataFrame) -> pd.DataFrame:
 def build_features(results: pd.DataFrame) -> pd.DataFrame:
     """Full pipeline: results table -> one row per driver-race with all features."""
     return add_relative(add_elo_and_points(add_features(results)))
+main

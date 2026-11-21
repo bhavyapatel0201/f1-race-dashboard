@@ -60,6 +60,8 @@ def pole_prediction(test: pd.DataFrame) -> pd.DataFrame:
     best = out.groupby("RaceIndex")["GridPos"].transform("min")
     out["RawProb"] = (out["GridPos"] == best).astype(float)
     return normalise_per_race(out)
+feat/results-dataset
+
 
 
 def walk_forward(df: pd.DataFrame, years, features, kind: str, min_train_seasons: int = 2) -> pd.DataFrame:
@@ -71,3 +73,4 @@ def walk_forward(df: pd.DataFrame, years, features, kind: str, min_train_seasons
             continue
         parts.append(fit_predict(train, test, features, kind))
     return pd.concat(parts)
+main
