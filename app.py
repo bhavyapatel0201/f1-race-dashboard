@@ -10,8 +10,11 @@ import streamlit as st
 
 from f1dash.analysis import (add_stints, clean_laps, lap_gap, stint_summary,
                              strategy_table, track_evolution)
-from f1dash.charts import race_trace, strategy
+from f1dash.charts import race_trace, strategy, win_probabilities
 from f1dash.data import get_schedule, load_race
+from f1dash.dataset import load_results
+from f1dash.features import build_features
+from f1dash.predict import race_probabilities
 
 st.set_page_config(page_title="F1 Race Dashboard", layout="wide")
 st.title("F1 Race Data Dashboard")
@@ -21,6 +24,11 @@ st.caption("Data: Jolpica-F1 (free, no login). Stints are inferred from pit stop
 @st.cache_data(show_spinner="Loading schedule...")
 def schedule(year):
     return get_schedule(year)
+
+
+@st.cache_data(show_spinner="Building model data (first run downloads 2018-2026, about a minute)...")
+def model_features():
+    return build_features(load_results(range(2018, 2027)))
 
 
 @st.cache_data(show_spinner="Downloading race data (first load takes a few seconds)...")
@@ -41,7 +49,8 @@ laps = clean_laps(all_laps)
 drivers = sorted(all_laps["Driver"].unique())
 
 st.subheader(label)
-tabs = st.tabs(["Results", "Race trace", "Driver gap", "Strategy", "Stint pace", "Track evolution"])
+tabs = st.tabs(["Results", "Race trace", "Driver gap", "Strategy", "Stint pace",
+                "Track evolution", "Win probabilities"])
 
 with tabs[0]:
     st.dataframe(results[["Finish", "Grid", "Driver", "Team", "Laps", "Status"]]
@@ -84,3 +93,26 @@ with tabs[5]:
     evo = track_evolution(laps)
     st.plotly_chart(px.line(evo, x="LapNumber", y=["Median", "Smoothed"],
                             title="Field median lap time"), use_container_width=True)
+
+with tabs[6]:
+    if year < 2020:
+        st.info("The model needs two earlier seasons of data (dataset starts in 2018). Pick 2020 or later.")
+    else:
+        try:
+            probs = race_probabilities(model_features(), year, rnd)
+        except ValueError as err:
+            st.info(str(err))
+        else:
+            code = dict(zip(results["DriverId"], results["Driver"]))
+            probs["Code"] = probs["DriverId"].map(code).fillna(probs["DriverId"])
+            st.plotly_chart(win_probabilities(probs), use_container_width=True)
+            table = probs[["Code", "Grid", "Finish", "GridModel", "RelativeModel"]].rename(
+                columns={"Code": "Driver", "GridModel": "P(win) grid only",
+                         "RelativeModel": "P(win) grid+form+Elo"})
+            st.dataframe(table.style.format({"P(win) grid only": "{:.1%}",
+                                             "P(win) grid+form+Elo": "{:.1%}"}),
+                         hide_index=True, use_container_width=True)
+            st.caption("Both models are trained only on seasons before this one. "
+                       "Across 2020-2025 the grid + form + Elo model gives better-calibrated "
+                       "probabilities, but neither picks winners reliably better than the pole sitter "
+                       "(see README for the full evaluation).")

@@ -33,3 +33,13 @@ def test_race_trace_has_trace_per_driver():
 def test_strategy_orders_by_finish():
     fig = strategy(strategy_table(laps()), results())
     assert list(fig.layout.yaxis.categoryarray) == ["VER", "PER", "LEC"]
+
+
+def test_win_probabilities_marks_winner():
+    from f1dash.charts import win_probabilities
+    probs = pd.DataFrame([
+        dict(Code="VER", Finish=1, GridModel=0.7, RelativeModel=0.6),
+        dict(Code="PER", Finish=2, GridModel=0.3, RelativeModel=0.4)])
+    fig = win_probabilities(probs)
+    labels = list(fig.data[0].x)
+    assert labels == ["VER*", "PER"] and len(fig.data) == 2

@@ -61,3 +61,24 @@ def strategy(strat, results) -> go.Figure:
                      categoryorder="array", categoryarray=order, autorange="reversed")
     fig.update_layout(xaxis_title="Lap", yaxis_title="", height=680, legend_title="Stint")
     return fig
+
+
+def win_probabilities(probs) -> go.Figure:
+    """Grouped bars: each driver's win probability under the two models.
+
+    `probs` needs columns Code, GridModel, RelativeModel, Finish. The actual winner's
+    label is marked with a trophy-free asterisk so the chart stays plain text safe.
+    """
+    df = probs.copy()
+    df["Label"] = df.apply(lambda r: f"{r['Code']}*" if r["Finish"] == 1 else r["Code"], axis=1)
+    long = df.melt(id_vars=["Label", "Finish"], value_vars=["GridModel", "RelativeModel"],
+                   var_name="Model", value_name="WinProbability")
+    long["Model"] = long["Model"].map({"GridModel": "Grid only", "RelativeModel": "Grid + form + Elo"})
+    fig = px.bar(long, x="Label", y="WinProbability", color="Model", barmode="group",
+                 category_orders={"Label": df["Label"].tolist()},
+                 hover_data={"Finish": True},
+                 title="Modelled win probability by driver (* = actual winner)")
+    fig.update_layout(xaxis_title="", yaxis_title="Win probability", height=520,
+                      yaxis_tickformat=".0%")
+    fig.update_layout(legend=dict(orientation="h", y=1.12, x=0))
+    return fig
