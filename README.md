@@ -1,5 +1,7 @@
 # F1 Race Data Dashboard and Winner Predictor
 
+![F1 dashboard](docs/img/dashboard.png)
+
 An interactive dashboard on real Formula 1 data, plus a race-winner prediction model that is
 evaluated honestly: leak-free features, walk-forward validation, and a final test on a season the
 model never saw while it was being developed.
